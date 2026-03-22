@@ -6,7 +6,7 @@ Chart of wholesale electricity prices: Germany vs. France (2015–2026)
 Input file: european_wholesale_electricity_price_data_monthly.csv
 """
 #########################################################
-# Transform the data
+# Imports
 #########################################################
 import pandas as pd
 import matplotlib.pyplot as plt
