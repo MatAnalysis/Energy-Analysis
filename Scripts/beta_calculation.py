@@ -136,3 +136,34 @@ def rolling_beta(stock_ret, bench_ret, window=252):
         dates.append(chunk.index[-1])
     return pd.Series(betas, index=dates, name="beta")
 
+
+#########################################################
+# VARIABLE DEFINITION
+##########################################################
+
+BENCHMARK = "^STOXX50E"
+EDF_CSV_PATH = "Electricite_de_France.csv"
+
+TICKERS = {
+    "EDF.PA":  ("2013-01-01", "2023-06-01", "csv"),
+    "RWE.DE":  ("2013-01-01", "2025-03-15", "yfinance"),
+    "EOAN.DE": ("2013-01-01", "2025-03-15", "yfinance"),
+}
+
+COLORS = {
+    "EDF.PA":  "#e74c3c",
+    "RWE.DE":  "#2ecc71",
+    "EOAN.DE": "#3498db",
+}
+
+#########################################################
+# LOADING THE BENCHMARK
+##########################################################
+
+print("Downloading the benchmark data (Euro Stoxx 50)...")
+bench_returns = get_returns_yfinance(BENCHMARK, "2013-01-01", "2025-03-15")
+
+if bench_returns.empty:
+    raise RuntimeError("Can not load the benchmark data.")
+
+print(f"  Benchmark: {len(bench_returns)} observations\n")
