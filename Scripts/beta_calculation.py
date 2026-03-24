@@ -84,3 +84,55 @@ def get_returns_csv(filepath):
         df = pd.read_csv(filepath)
         # clearing string columns
         df.columns = df.columns.str.strip()
+
+        # get the price column
+        price_col = next((c for c in ["Price", "Close", "close", "price"] if c in df.columns), None)
+        if price_col is None:
+            print(f"  Price column not found: {list(df.columns)}")
+            return pd.Series(dtype=float)
+        # get the date column
+        date_col = next((c for c in ["Date", "date", "Data"] if c in df.columns), None)
+        if date_col is None:
+            print(f"  Date column not found: {list(df.columns)}")
+            return pd.Series(dtype=float)
+
+        # converting and setting up date column
+        df[date_col] = pd.to_datetime(df[date_col], dayfirst=False, errors="coerce")
+        df = df.dropna(subset=[date_col, price_col])
+        df = df.set_index(date_col).sort_index()
+
+        # changing price type
+        if df[price_col].dtype == object:
+            df[price_col] = df[price_col].str.replace(",", "").astype(float)
+
+        close = normalize_index(df[price_col].dropna())
+        returns = close.pct_change().dropna()
+        print(f" Loaded {len(returns)} observations "
+              f"({close.index[0].date()} → {close.index[-1].date()})")
+        return returns
+
+    except Exception as e:
+        print(f" CSV error: {e}")
+        return pd.Series(dtype=float)
+
+
+def calc_beta(stock_ret, bench_ret):
+    # function to calculate beta
+    df = pd.DataFrame({"stock": stock_ret, "bench": bench_ret}).dropna()
+    if len(df) < 30:
+        return float("nan"), 0
+    beta = df["stock"].cov(df["bench"]) / df["bench"].var()
+    return beta, len(df)
+
+
+def rolling_beta(stock_ret, bench_ret, window=252):
+    # rolling beta calculation for window of 252
+    df = pd.DataFrame({"stock": stock_ret, "bench": bench_ret}).dropna()
+    betas, dates = [], []
+    for i in range(window, len(df) + 1):
+        chunk = df.iloc[i - window:i]
+        b = chunk["stock"].cov(chunk["bench"]) / chunk["bench"].var()
+        betas.append(b)
+        dates.append(chunk.index[-1])
+    return pd.Series(betas, index=dates, name="beta")
+
