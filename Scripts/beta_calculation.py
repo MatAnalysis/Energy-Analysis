@@ -7,6 +7,7 @@ TODO !!!!!
 
 import yfinance as yf
 import pandas as pd
+import numpy as np
 import os
 
 #########################################################
@@ -169,7 +170,6 @@ if bench_returns.empty:
 print(f"  Benchmark: {len(bench_returns)} observations\n")
 
 
-
 #########################################################
 # LOADING THE DATA
 ##########################################################
@@ -196,3 +196,23 @@ for ticker, (start, end, source) in TICKERS.items():
 
     print(f"  Found {ticker}: β = {beta_total:.4f}  (Observations: {n_obs})\n")
 
+
+#########################################################
+# DATA SUMMARY
+##########################################################
+
+print("=" * 50)
+print(f"{'Spółka':<12} {'Beta':>8}  {'Interpretacja'}")
+print("-" * 50)
+for ticker, beta in results.items():
+    if np.isnan(beta):
+        print(f"{ticker:<12} {'n/d':>8}  brak danych")
+        continue
+    if beta < 0.6:   interp = "very defensive"
+    elif beta < 0.9: interp = "defensive"
+    elif beta < 1.1: interp = "neutral"
+    else:            interp = "ogresive"
+    print(f"{ticker:<12} {beta:8.4f}  {interp}")
+print("=" * 50)
+print(f"Benchmark: {BENCHMARK} (Euro Stoxx 50)")
+print("Warining: EDF.PA – delisting 2023 (Nationalization)\n")
