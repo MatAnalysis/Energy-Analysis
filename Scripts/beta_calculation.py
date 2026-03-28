@@ -126,7 +126,7 @@ def calc_beta(stock_ret, bench_ret):
 
 
 def rolling_beta(stock_ret, bench_ret, window=252):
-    # rolling beta calculation for window of 252
+    # rolling beta calculation for the window of 252
     df = pd.DataFrame({"stock": stock_ret, "bench": bench_ret}).dropna()
     betas, dates = [], []
     for i in range(window, len(df) + 1):
@@ -167,3 +167,32 @@ if bench_returns.empty:
     raise RuntimeError("Can not load the benchmark data.")
 
 print(f"  Benchmark: {len(bench_returns)} observations\n")
+
+
+
+#########################################################
+# LOADING THE DATA
+##########################################################
+results = {}
+rolling_betas = {}
+
+for ticker, (start, end, source) in TICKERS.items():
+    print(f"Load: {ticker} ({start} → {end})  [source: {source}]")
+
+    stock_ret = get_returns_csv(EDF_CSV_PATH) if source == "csv" \
+                else get_returns_yfinance(ticker, start, end)
+
+    if stock_ret.empty:
+        print(f"  No Data for ticker: {ticker}\n")
+        results[ticker] = float("nan")
+        continue
+
+    bench_cut = bench_returns.reindex(stock_ret.index).dropna()
+    beta_total, n_obs = calc_beta(stock_ret, bench_cut)
+    results[ticker] = round(beta_total, 4) if not np.isnan(beta_total) else float("nan")
+
+    rb = rolling_beta(stock_ret, bench_cut)
+    rolling_betas[ticker] = rb
+
+    print(f"  Found {ticker}: β = {beta_total:.4f}  (Observations: {n_obs})\n")
+
