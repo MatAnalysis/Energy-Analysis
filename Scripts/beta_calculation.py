@@ -8,6 +8,8 @@ TODO !!!!!
 import yfinance as yf
 import pandas as pd
 import numpy as np
+import matplotlib.pyplot as plt
+import matplotlib.dates as mdates
 import os
 
 #########################################################
@@ -143,7 +145,7 @@ def rolling_beta(stock_ret, bench_ret, window=252):
 ##########################################################
 
 BENCHMARK = "^STOXX50E"
-EDF_CSV_PATH = "Electricite_de_France.csv"
+EDF_CSV_PATH = "../Data/Electricite_de_France.csv"
 
 TICKERS = {
     "EDF.PA":  ("2013-01-01", "2023-06-01", "csv"),
@@ -202,11 +204,11 @@ for ticker, (start, end, source) in TICKERS.items():
 ##########################################################
 
 print("=" * 50)
-print(f"{'Spółka':<12} {'Beta':>8}  {'Interpretacja'}")
+print(f"{'Company':<12} {'Beta':>8}  {'Interpretation'}")
 print("-" * 50)
 for ticker, beta in results.items():
     if np.isnan(beta):
-        print(f"{ticker:<12} {'n/d':>8}  brak danych")
+        print(f"{ticker:<12} {'n/d':>8}  No data")
         continue
     if beta < 0.6:   interp = "very defensive"
     elif beta < 0.9: interp = "defensive"
@@ -216,3 +218,80 @@ for ticker, beta in results.items():
 print("=" * 50)
 print(f"Benchmark: {BENCHMARK} (Euro Stoxx 50)")
 print("Warining: EDF.PA – delisting 2023 (Nationalization)\n")
+
+
+#########################################################
+# PLOTTING THE DATA
+##########################################################
+
+available = {t: rb for t, rb in rolling_betas.items() if not rb.empty}
+
+if not available:
+    print("No Data available")
+else:
+    fig, ax = plt.subplots(figsize=(13, 6))
+
+    # Grey background
+    fig.patch.set_facecolor("#2b2b2b")
+    ax.set_facecolor("#3a3a3a")
+
+    # Plotting Rolling beta
+    for ticker, rb in available.items():
+        beta_label = f"{results[ticker]:.2f}" if not np.isnan(results[ticker]) else "n/d"
+        ax.plot(
+            rb.index, rb.values,
+            label=f"{ticker}  (β total = {beta_label})",
+            color=COLORS[ticker], linewidth=2
+        )
+
+    # lines at 1 and 0 as the reference lines
+    ax.axhline(1.0, color="white", linestyle="--", linewidth=1, alpha=0.5)
+    ax.axhline(0.0, color="white", linestyle=":", linewidth=1, alpha=0.3)
+
+    # Highlight important periods
+    ax.axvspan(pd.Timestamp("2020-02-01"), pd.Timestamp("2020-06-01"),
+               alpha=0.08, color="orange", label="COVID-19 (02–06.2020)")
+    ax.axvspan(pd.Timestamp("2021-10-01"), pd.Timestamp("2022-12-01"),
+               alpha=0.06, color="red", label="Energy crisis (2021–22)")
+
+
+    # Title
+    ax.set_title(
+        "Yearly rolling beta \n"
+        "EDF.PA / RWE.DE / EOAN.DE  vs  Euro Stoxx 50",
+        fontsize=14, fontweight="bold", color="white", pad=12
+    )
+    # axis titles
+    ax.set_xlabel("Data", fontsize=11, color="white")
+    ax.set_ylabel("Beta (β)", fontsize=11, color="white")
+
+    # additional axis formatting
+    ax.xaxis.set_major_formatter(mdates.DateFormatter("%Y"))
+    ax.xaxis.set_major_locator(mdates.YearLocator())
+    plt.xticks(rotation=45, color="white")
+    ax.tick_params(colors="white")
+
+    # Chart frame
+    for spine in ax.spines.values():
+        spine.set_color("white")
+
+    # grid
+    ax.grid(True, color="white", alpha=0.15)
+
+    # Legend formatting
+    ax.legend(
+        loc="upper right",
+        fontsize=10,
+        facecolor="#3a3a3a",
+        edgecolor="white",
+        labelcolor="white"
+    )
+    # adjusting layout
+    fig.tight_layout()
+
+    # saving to file
+    fig_name = "rolling_beta.png"
+    plt.savefig(fig_name, dpi=150, bbox_inches="tight", facecolor=fig.get_facecolor())
+    print(f"Chart saved as: {fig_name}")
+
+    plt.show()
