@@ -290,7 +290,7 @@ else:
     fig.tight_layout()
 
     # saving to file
-    fig_name = "rolling_beta.png"
+    fig_name = "../Plots/rolling_beta.png"
     plt.savefig(fig_name, dpi=150, bbox_inches="tight", facecolor=fig.get_facecolor())
     print(f"Chart saved as: {fig_name}")
 
